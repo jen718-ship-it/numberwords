@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1,2,3</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@600;700&display=swap');
+
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: linear-gradient(135deg, #a8edd9 0%, #fef9d7 35%, #d2e7ff 70%, #fef3c7 100%);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .title-font {
+            font-family: 'Fredoka One', cursive;
+        }
+
+        /* Card 3D Perspective & Flip */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+
+        .card-inner {
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform-style: preserve-3d;
+        }
+
+        /* Animations */
+        @keyframes popSuccess {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.12) rotate(2deg); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes shakeError {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+
+        @keyframes pulseAudio {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.6); }
+            70% { transform: scale(1.08); box-shadow: 0 0 0 14px rgba(236, 72, 153, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(236, 72, 153, 0); }
+        }
+
+        .animate-pop {
+            animation: popSuccess 0.4s ease-in-out;
+        }
+
+        .animate-shake {
+            animation: shakeError 0.4s ease-in-out;
+        }
+
+        .animate-pulse-audio {
+            animation: pulseAudio 1.5s infinite;
+        }
+
+        /* Celebration Modal Animation */
+        @keyframes modalBounce {
+            0% { transform: scale(0.3) rotate(-10deg); opacity: 0; }
+            50% { transform: scale(1.08) rotate(3deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        .animate-modal {
+            animation: modalBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+    </style>
+</head>
+<body class="w-full min-h-screen flex flex-col justify-between items-center p-3 md:p-6 overflow-x-hidden">
+
+    <!-- MAIN CONTAINER CARD -->
+    <div class="w-full max-w-4xl bg-white/80 backdrop-blur-md rounded-3xl p-4 sm:p-6 shadow-2xl border-4 border-indigo-100 flex flex-col items-center justify-between min-h-[80vh] my-auto relative">
+
+        <!-- HEADER TOP BAR -->
+        <header class="w-full flex items-center justify-between pb-3 mb-2 border-b-2 border-indigo-50">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-tr from-yellow-400 to-pink-500 text-white p-3 rounded-2xl shadow-md transform -rotate-6">
+                    <i class="fa-solid fa-shapes text-2xl"></i>
+                </div>
+                <!-- STRICT TEXT RULE: ONLY TITLE "1,2,3" PERMITTED -->
+                <h1 class="title-font text-4xl sm:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-600 drop-shadow-sm">
+                    1,2,3
+                </h1>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <!-- Audio Replay Button (Game Mode Prompt) -->
+                <button id="btn-replay-audio" title="Audio Prompt" class="hidden bg-pink-500 hover:bg-pink-600 text-white w-12 h-12 sm:w-14 sm:h-14 rounded-2xl shadow-lg flex items-center justify-center text-2xl transition transform active:scale-95 animate-pulse-audio">
+                    <i class="fa-solid fa-volume-high"></i>
+                </button>
+                <!-- Settings Button to open setup -->
+                <button id="btn-settings" title="Settings" class="bg-white/90 hover:bg-white text-indigo-600 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl shadow-md flex items-center justify-center text-2xl border-2 border-indigo-200 transition transform active:scale-95">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- SETUP SCREEN PANEL -->
+        <div id="setup-panel" class="w-full flex-1 flex flex-col items-center justify-center space-y-6 py-4 transition-all duration-300">
+            
+            <!-- Game Mode Selector (Icons Only) -->
+            <div class="w-full max-w-lg">
+                <div class="grid grid-cols-3 gap-3 md:gap-4">
+                    <!-- Audio -> Word -->
+                    <button data-mode="audio-word" title="Audio to Word" class="mode-btn bg-pink-100 border-4 border-pink-400 text-pink-600 p-4 rounded-2xl flex items-center justify-center shadow-sm transition hover:scale-105">
+                        <div class="flex items-center space-x-2 text-2xl md:text-3xl">
+                            <i class="fa-solid fa-volume-high"></i>
+                            <i class="fa-solid fa-arrow-right text-xs opacity-60"></i>
+                            <i class="fa-solid fa-font"></i>
+                        </div>
+                    </button>
+                    <!-- Audio -> Digit -->
+                    <button data-mode="audio-digit" title="Audio to Digit" class="mode-btn bg-purple-50 border-4 border-transparent text-purple-600 p-4 rounded-2xl flex items-center justify-center shadow-sm transition hover:scale-105">
+                        <div class="flex items-center space-x-2 text-2xl md:text-3xl">
+                            <i class="fa-solid fa-volume-high"></i>
+                            <i class="fa-solid fa-arrow-right text-xs opacity-60"></i>
+                            <i class="fa-solid fa-hashtag"></i>
+                        </div>
+                    </button>
+                    <!-- Drag & Match Word -> Digit -->
+                    <button data-mode="drag-match" title="Drag Word to Digit Match" class="mode-btn bg-purple-50 border-4 border-transparent text-indigo-600 p-4 rounded-2xl flex items-center justify-center shadow-sm transition hover:scale-105">
+                        <div class="flex items-center space-x-2 text-2xl md:text-3xl">
+                            <i class="fa-solid fa-hand-pointer"></i>
+                            <i class="fa-solid fa-arrow-right text-xs opacity-60"></i>
+                            <i class="fa-solid fa-square-check"></i>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Round Length Selector (5 or 10 items - Icons Only) -->
+            <div class="w-full max-w-xs flex justify-center space-x-4">
+                <button data-length="5" title="5 Rounds" class="length-btn flex-1 py-3 bg-indigo-500 border-4 border-indigo-300 text-white rounded-2xl text-2xl flex items-center justify-center shadow-md transition transform hover:scale-105">
+                    <i class="fa-solid fa-hand"></i>
+                </button>
+                <button data-length="10" title="10 Rounds" class="length-btn flex-1 py-3 bg-slate-100 border-4 border-slate-200 text-slate-400 rounded-2xl text-2xl flex items-center justify-center shadow-md transition transform hover:scale-105">
+                    <i class="fa-solid fa-hands"></i>
+                </button>
+            </div>
+
+            <!-- Number Pool Toggle Chips (1 to 10) -->
+            <div class="w-full max-w-md">
+                <div class="grid grid-cols-5 gap-2 sm:gap-3" id="number-selector-grid">
+                    <!-- Dynamically created -->
+                </div>
+            </div>
+
+            <!-- Play / Start Button -->
+            <button id="btn-start-game" title="Start Game" class="bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white w-20 h-20 rounded-full shadow-xl flex items-center justify-center text-4xl border-4 border-white transform transition hover:scale-110 active:scale-95">
+                <i class="fa-solid fa-play ml-1"></i>
+            </button>
+        </div>
+
+        <!-- GAMEPLAY SCREEN PANEL -->
+        <div id="game-panel" class="hidden w-full flex-1 flex flex-col items-center justify-between space-y-4 py-2">
+            
+            <!-- Progress Bar Bar Indicator -->
+            <div class="w-full max-w-md bg-indigo-50 rounded-full h-6 p-1 border-2 border-indigo-200 shadow-inner relative overflow-hidden">
+                <div id="progress-bar-fill" class="bg-gradient-to-r from-emerald-400 to-teal-500 h-full rounded-full transition-all duration-300 w-0"></div>
+            </div>
+
+            <!-- Standard Audio Click Cards Grid -->
+            <div id="cards-grid" class="w-full flex-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 md:gap-4 p-2 items-center justify-items-center">
+                <!-- Cards injected dynamically -->
+            </div>
+
+            <!-- Drag & Drop Word -> Digit Interactive Area -->
+            <div id="drag-drop-area" class="hidden w-full flex-1 flex flex-col items-center justify-evenly space-y-4 py-2">
+                <!-- Target Digit Cards -->
+                <div id="drag-targets-grid" class="w-full grid grid-cols-5 gap-2 sm:gap-4 justify-items-center max-w-2xl"></div>
+                <!-- Draggable Word Cards -->
+                <div id="drag-words-grid" class="w-full grid grid-cols-5 gap-2 sm:gap-4 justify-items-center max-w-2xl min-h-[100px]"></div>
+            </div>
+
+            <!-- Bottom Control Action Icons -->
+            <footer class="w-full max-w-xs flex items-center justify-center space-x-6 pt-2">
+                <!-- Shuffle Button -->
+                <button id="btn-shuffle" title="Shuffle Cards" class="bg-gradient-to-tr from-amber-400 to-orange-500 text-white w-14 h-14 sm:w-16 sm:h-16 rounded-2xl shadow-lg flex items-center justify-center text-2xl sm:text-3xl transition transform hover:scale-110 active:scale-95 border-2 border-white">
+                    <i class="fa-solid fa-shuffle"></i>
+                </button>
+
+                <!-- Reset Button -->
+                <button id="btn-reset" title="Reset Round" class="bg-gradient-to-tr from-sky-400 to-blue-500 text-white w-14 h-14 sm:w-16 sm:h-16 rounded-2xl shadow-lg flex items-center justify-center text-2xl sm:text-3xl transition transform hover:scale-110 active:scale-95 border-2 border-white">
+                    <i class="fa-solid fa-arrow-rotate-left"></i>
+                </button>
+            </footer>
+        </div>
+
+        <!-- CELEBRATION ROUND FINISH MODAL -->
+        <div id="celebration-modal" class="hidden absolute inset-0 bg-indigo-950/40 backdrop-blur-md rounded-3xl flex items-center justify-center p-4 z-50">
+            <div class="animate-modal bg-white border-8 border-yellow-300 rounded-3xl p-6 sm:p-10 shadow-2xl flex flex-col items-center text-center space-y-6 max-w-md w-full">
+                <!-- Trophy / Stars Graphic -->
+                <div class="relative">
+                    <div class="text-yellow-400 text-7xl sm:text-8xl drop-shadow-md">
+                        <i class="fa-solid fa-award"></i>
+                    </div>
+                    <i class="fa-solid fa-star text-amber-300 text-3xl absolute -top-2 -left-4 animate-bounce"></i>
+                    <i class="fa-solid fa-star text-pink-400 text-2xl absolute top-2 -right-4 animate-bounce" style="animation-delay: 0.2s;"></i>
+                </div>
+
+                <!-- CELEBRATORY TEXT "Very Good!" -->
+                <h2 class="title-font text-4xl sm:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-amber-500 to-emerald-500 drop-shadow-sm">
+                    Very Good!
+                </h2>
+
+                <!-- ICON-ONLY ACTION BUTTONS: Play Again / Home Setup -->
+                <div class="flex items-center space-x-6 pt-2">
+                    <!-- Play Again Button -->
+                    <button id="btn-play-again" title="Play Again" class="bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white w-16 h-16 sm:w-20 sm:h-20 rounded-2xl shadow-xl flex items-center justify-center text-3xl sm:text-4xl transition transform hover:scale-110 active:scale-95 border-4 border-white">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+
+                    <!-- Home / Setup Button -->
+                    <button id="btn-home" title="Setup / Home" class="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white w-16 h-16 sm:w-20 sm:h-20 rounded-2xl shadow-xl flex items-center justify-center text-3xl sm:text-4xl transition transform hover:scale-110 active:scale-95 border-4 border-white">
+                        <i class="fa-solid fa-house"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JAVASCRIPT GAME LOGIC -->
+    <script>
+        // Data Definitions
+        const NUMBER_DATA = [
+            { val: 1, word: 'one', digit: '1' },
+            { val: 2, word: 'two', digit: '2' },
+            { val: 3, word: 'three', digit: '3' },
+            { val: 4, word: 'four', digit: '4' },
+            { val: 5, word: 'five', digit: '5' },
+            { val: 6, word: 'six', digit: '6' },
+            { val: 7, word: 'seven', digit: '7' },
+            { val: 8, word: 'eight', digit: '8' },
+            { val: 9, word: 'nine', digit: '9' },
+            { val: 10, word: 'ten', digit: '10' }
+        ];
+
+        // State Management
+        let selectedNumbers = [1, 2, 3, 4, 5];
+        let currentMode = 'audio-word';
+        let roundLengthTarget = 5;
+        let roundQueue = [];
+        let totalItemsInRound = 5;
+        let completedCount = 0;
+        let currentDeck = [];
+        let targetItem = null;
+        let isGameStarted = false;
+        let draggedData = null;
+        let selectedWordElem = null;
+
+        // DOM Elements
+        const setupPanel = document.getElementById('setup-panel');
+        const gamePanel = document.getElementById('game-panel');
+        const numberSelectorGrid = document.getElementById('number-selector-grid');
+        const cardsGrid = document.getElementById('cards-grid');
+        const dragDropArea = document.getElementById('drag-drop-area');
+        const dragTargetsGrid = document.getElementById('drag-targets-grid');
+        const dragWordsGrid = document.getElementById('drag-words-grid');
+        const progressBarFill = document.getElementById('progress-bar-fill');
+        const btnReplayAudio = document.getElementById('btn-replay-audio');
+        const btnSettings = document.getElementById('btn-settings');
+        const btnStartGame = document.getElementById('btn-start-game');
+        const btnShuffle = document.getElementById('btn-shuffle');
+        const btnReset = document.getElementById('btn-reset');
+        const celebrationModal = document.getElementById('celebration-modal');
+        const btnPlayAgain = document.getElementById('btn-play-again');
+        const btnHome = document.getElementById('btn-home');
+        const modeButtons = document.querySelectorAll('.mode-btn');
+        const lengthButtons = document.querySelectorAll('.length-btn');
+
+        // Web Audio Synthesizer Effects
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSoundEffect(type) {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'correct') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.exponentialRampToValueAtTime(880, now + 0.22);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+                osc.start(now);
+                osc.stop(now + 0.22);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.setValueAtTime(140, now + 0.2);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            } else if (type === 'shuffle') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(350, now);
+                osc.frequency.exponentialRampToValueAtTime(650, now + 0.12);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                osc.start(now);
+                osc.stop(now + 0.12);
+            }
+        }
+
+        function speakNumber(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.85;
+                utterance.pitch = 1.1;
+                utterance.lang = 'en-US';
+                
+                btnReplayAudio.classList.add('scale-110');
+                utterance.onend = () => {
+                    btnReplayAudio.classList.remove('scale-110');
+                };
+                
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Setup Selection Grid
+        function initSetupGrid() {
+            numberSelectorGrid.innerHTML = '';
+            NUMBER_DATA.forEach(num => {
+                const isSelected = selectedNumbers.includes(num.val);
+                const chip = document.createElement('button');
+                chip.className = `h-12 rounded-2xl font-bold text-xl flex items-center justify-center border-4 transition transform active:scale-95 ${
+                    isSelected 
+                        ? 'bg-gradient-to-br from-indigo-500 to-purple-600 border-indigo-300 text-white shadow-md' 
+                        : 'bg-slate-100 border-slate-200 text-slate-400'
+                }`;
+                chip.innerHTML = `<span>${num.val}</span>`;
+                chip.addEventListener('click', () => toggleNumberSelection(num.val));
+                numberSelectorGrid.appendChild(chip);
+            });
+        }
+
+        function toggleNumberSelection(val) {
+            if (selectedNumbers.includes(val)) {
+                if (selectedNumbers.length > 2) {
+                    selectedNumbers = selectedNumbers.filter(n => n !== val);
+                }
+            } else {
+                selectedNumbers.push(val);
+            }
+            selectedNumbers.sort((a, b) => a - b);
+            initSetupGrid();
+        }
+
+        modeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                modeButtons.forEach(b => {
+                    b.classList.remove('bg-pink-100', 'border-pink-400', 'text-pink-600');
+                    b.classList.add('bg-purple-50', 'border-transparent', 'text-purple-600');
+                });
+                btn.classList.remove('bg-purple-50', 'border-transparent');
+                btn.classList.add('bg-pink-100', 'border-pink-400', 'text-pink-600');
+                currentMode = btn.dataset.mode;
+            });
+        });
+
+        lengthButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                lengthButtons.forEach(b => {
+                    b.classList.remove('bg-indigo-500', 'border-indigo-300', 'text-white');
+                    b.classList.add('bg-slate-100', 'border-slate-200', 'text-slate-400');
+                });
+                btn.classList.remove('bg-slate-100', 'border-slate-200', 'text-slate-400');
+                btn.classList.add('bg-indigo-500', 'border-indigo-300', 'text-white');
+                roundLengthTarget = parseInt(btn.dataset.length);
+            });
+        });
+
+        function setupQueue() {
+            const activeItems = NUMBER_DATA.filter(n => selectedNumbers.includes(n.val));
+            roundQueue = [];
+            for (let i = 0; i < roundLengthTarget; i++) {
+                const randomItem = activeItems[Math.floor(Math.random() * activeItems.length)];
+                roundQueue.push(randomItem);
+            }
+            totalItemsInRound = roundQueue.length;
+            completedCount = 0;
+            updateProgressBar();
+        }
+
+        function updateProgressBar() {
+            const progressPercent = Math.min(100, (completedCount / totalItemsInRound) * 100);
+            progressBarFill.style.width = `${progressPercent}%`;
+        }
+
+        // Render Card Layout (Uniform indigo cards focusing on crisp text/digits)
+        function renderCards(ordered = true) {
+            if (currentMode === 'drag-match') {
+                cardsGrid.classList.add('hidden');
+                dragDropArea.classList.remove('hidden');
+                renderDragMatchBoard();
+                return;
+            }
+
+            cardsGrid.classList.remove('hidden');
+            dragDropArea.classList.add('hidden');
+            cardsGrid.innerHTML = '';
+            
+            let list = NUMBER_DATA.filter(n => selectedNumbers.includes(n.val));
+            if (!ordered) {
+                list = [...list].sort(() => Math.random() - 0.5);
+            }
+            currentDeck = list;
+
+            currentDeck.forEach((item) => {
+                const cardContainer = document.createElement('div');
+                cardContainer.className = 'w-24 h-36 sm:w-32 sm:h-44 md:w-36 md:h-48 perspective-1000 cursor-pointer transform transition hover:scale-105 my-auto';
+                
+                let cardLabel = item.word;
+                if (currentMode === 'audio-digit') {
+                    cardLabel = item.digit;
+                }
+
+                cardContainer.innerHTML = `
+                    <div class="card-inner relative w-full h-full rounded-3xl shadow-lg">
+                        <div class="card-front absolute inset-0 rounded-3xl bg-indigo-600 border-4 border-indigo-200 flex flex-col items-center justify-center p-2 text-white">
+                            <span class="text-2xl sm:text-4xl font-extrabold tracking-wider text-center">
+                                ${cardLabel}
+                            </span>
+                        </div>
+                    </div>
+                `;
+
+                cardContainer.addEventListener('click', () => handleCardClick(item, cardContainer));
+                cardsGrid.appendChild(cardContainer);
+            });
+        }
+
+        // Render Drag & Match Game Board
+        function renderDragMatchBoard() {
+            dragTargetsGrid.innerHTML = '';
+            dragWordsGrid.innerHTML = '';
+            selectedWordElem = null;
+
+            let pool = NUMBER_DATA.filter(n => selectedNumbers.includes(n.val));
+            let boardItems = [...pool].sort(() => Math.random() - 0.5).slice(0, 5);
+            
+            let digitsList = [...boardItems].sort((a, b) => a.val - b.val);
+            let wordsList = [...boardItems].sort(() => Math.random() - 0.5);
+
+            // Render Target Digit Cards
+            digitsList.forEach(item => {
+                const target = document.createElement('div');
+                target.dataset.val = item.val;
+                target.className = 'drop-target w-16 h-24 sm:w-28 sm:h-36 rounded-2xl bg-indigo-700 border-4 border-indigo-300 text-white flex flex-col items-center justify-center shadow-md transition-all';
+                target.innerHTML = `<span class="text-2xl sm:text-4xl font-extrabold pointer-events-none">${item.digit}</span>`;
+
+                target.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    target.classList.add('bg-indigo-500', 'scale-105');
+                });
+                target.addEventListener('dragleave', () => {
+                    target.classList.remove('bg-indigo-500', 'scale-105');
+                });
+                target.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    target.classList.remove('bg-indigo-500', 'scale-105');
+                    if (draggedData) {
+                        verifyMatch(draggedData.item, target, draggedData.elem);
+                    }
+                });
+
+                target.addEventListener('click', () => {
+                    if (selectedWordElem) {
+                        const wordVal = parseInt(selectedWordElem.dataset.val);
+                        const wordItem = NUMBER_DATA.find(n => n.val === wordVal);
+                        verifyMatch(wordItem, target, selectedWordElem);
+                    }
+                });
+
+                dragTargetsGrid.appendChild(target);
+            });
+
+            // Render Draggable Word Cards
+            wordsList.forEach(item => {
+                const wordCard = document.createElement('div');
+                wordCard.dataset.val = item.val;
+                wordCard.draggable = true;
+                wordCard.className = 'draggable-word w-16 h-20 sm:w-28 sm:h-28 rounded-2xl bg-white border-4 border-pink-400 text-pink-600 flex items-center justify-center shadow-md cursor-grab active:cursor-grabbing transform transition hover:scale-105';
+                wordCard.innerHTML = `<span class="text-sm sm:text-xl font-bold tracking-wide pointer-events-none">${item.word}</span>`;
+
+                wordCard.addEventListener('dragstart', () => {
+                    draggedData = { item, elem: wordCard };
+                    wordCard.classList.add('opacity-50');
+                });
+                wordCard.addEventListener('dragend', () => {
+                    draggedData = null;
+                    wordCard.classList.remove('opacity-50');
+                });
+
+                wordCard.addEventListener('click', () => {
+                    document.querySelectorAll('.draggable-word').forEach(w => w.classList.remove('ring-4', 'ring-amber-400', 'scale-105'));
+                    if (selectedWordElem === wordCard) {
+                        selectedWordElem = null;
+                    } else {
+                        selectedWordElem = wordCard;
+                        wordCard.classList.add('ring-4', 'ring-amber-400', 'scale-105');
+                    }
+                });
+
+                dragWordsGrid.appendChild(wordCard);
+            });
+        }
+
+        function verifyMatch(wordItem, targetElem, wordElem) {
+            const targetVal = parseInt(targetElem.dataset.val);
+
+            if (wordItem.val === targetVal) {
+                playSoundEffect('correct');
+                targetElem.classList.add('animate-pop', 'bg-emerald-500', 'border-emerald-200');
+                wordElem.classList.add('opacity-0', 'pointer-events-none');
+                
+                completedCount++;
+                updateProgressBar();
+
+                if (selectedWordElem === wordElem) selectedWordElem = null;
+
+                const remainingWords = document.querySelectorAll('.draggable-word:not(.opacity-0)');
+                if (remainingWords.length === 0) {
+                    if (completedCount >= totalItemsInRound) {
+                        triggerCelebration();
+                    } else {
+                        confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
+                        setTimeout(() => {
+                            renderDragMatchBoard();
+                        }, 1000);
+                    }
+                }
+            } else {
+                playSoundEffect('wrong');
+                targetElem.classList.add('animate-shake');
+                wordElem.classList.add('animate-shake');
+                setTimeout(() => {
+                    targetElem.classList.remove('animate-shake');
+                    wordElem.classList.remove('animate-shake');
+                }, 500);
+            }
+        }
+
+        function triggerCelebration() {
+            btnReplayAudio.classList.add('hidden');
+            confetti({ particleCount: 120, spread: 90, origin: { y: 0.5 } });
+            playSoundEffect('correct');
+            setTimeout(() => {
+                playSoundEffect('correct');
+            }, 180);
+
+            celebrationModal.classList.remove('hidden');
+        }
+
+        function startNextPrompt() {
+            if (currentMode === 'drag-match') {
+                btnReplayAudio.classList.add('hidden');
+                return;
+            }
+
+            if (roundQueue.length === 0 || completedCount >= totalItemsInRound) {
+                triggerCelebration();
+                return;
+            }
+
+            targetItem = roundQueue[0];
+            btnReplayAudio.classList.remove('hidden');
+            speakNumber(targetItem.word);
+        }
+
+        function handleCardClick(item, cardElement) {
+            if (!targetItem || currentMode === 'drag-match') return;
+
+            if (item.val === targetItem.val) {
+                playSoundEffect('correct');
+                cardElement.classList.add('animate-pop');
+
+                roundQueue.shift();
+                completedCount++;
+                updateProgressBar();
+
+                setTimeout(() => {
+                    cardElement.classList.remove('animate-pop');
+                    startNextPrompt();
+                }, 600);
+            } else {
+                playSoundEffect('wrong');
+                cardElement.classList.add('animate-shake');
+
+                const missedItem = roundQueue.shift();
+                roundQueue.push(missedItem);
+
+                setTimeout(() => {
+                    cardElement.classList.remove('animate-shake');
+                    startNextPrompt();
+                }, 500);
+            }
+        }
+
+        function triggerShuffle() {
+            playSoundEffect('shuffle');
+            renderCards(false);
+        }
+
+        // Controls Navigation
+        btnStartGame.addEventListener('click', () => {
+            setupPanel.classList.add('hidden');
+            gamePanel.classList.remove('hidden');
+            isGameStarted = true;
+            setupQueue();
+            renderCards(true);
+            startNextPrompt();
+        });
+
+        btnSettings.addEventListener('click', () => {
+            gamePanel.classList.add('hidden');
+            setupPanel.classList.remove('hidden');
+            btnReplayAudio.classList.add('hidden');
+        });
+
+        btnShuffle.addEventListener('click', () => {
+            if (!isGameStarted) {
+                setupPanel.classList.add('hidden');
+                gamePanel.classList.remove('hidden');
+                isGameStarted = true;
+                setupQueue();
+            }
+            triggerShuffle();
+        });
+
+        btnReset.addEventListener('click', () => {
+            renderCards(true);
+            if (isGameStarted) {
+                setupQueue();
+                startNextPrompt();
+            }
+        });
+
+        btnReplayAudio.addEventListener('click', () => {
+            if (targetItem) speakNumber(targetItem.word);
+        });
+
+        btnPlayAgain.addEventListener('click', () => {
+            celebrationModal.classList.add('hidden');
+            setupQueue();
+            renderCards(true);
+            startNextPrompt();
+        });
+
+        btnHome.addEventListener('click', () => {
+            celebrationModal.classList.add('hidden');
+            gamePanel.classList.add('hidden');
+            setupPanel.classList.remove('hidden');
+            btnReplayAudio.classList.add('hidden');
+        });
+
+        initSetupGrid();
+    </script>
+</body>
+</html>
